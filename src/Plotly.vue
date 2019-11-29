@@ -35,7 +35,9 @@ const functions = [
 
 const methods = functions.reduce((all, funcName) => {
   all[funcName] = function(...args) {
-    return Plotly[funcName].apply(Plotly, [this.$refs.container].concat(args))
+    return Plotly[funcName].apply(Plotly, [this.$refs.container].concat(args)).catch((err) => {
+      console.log('[safe to ignore] failed during plotly\'s %s : (%s) %s', funcName, err.name, err.message);
+    })
   }
   return all
 }, {})
@@ -44,6 +46,9 @@ export default {
   props: {
     autoResize: Boolean,
     watchShallow: false,
+    refresh: {
+      required: false
+    },
     options: {
       type: Object
     },
@@ -66,6 +71,7 @@ export default {
     this.$watch('data', this.newPlot, { deep: !this.watchShallow })
     this.$watch('options', this.newPlot, { deep: !this.watchShallow })
     this.$watch('layout', this.relayout, { deep: !this.watchShallow })
+    this.$watch('refresh', this.onRefresh)
   },
   beforeDestroy() {
     window.removeEventListener('resize', this.__resizeListener)
@@ -73,6 +79,11 @@ export default {
     Plotly.purge(this.$refs.container)
   },
   methods: {
+    onRefresh(newv, oldv) {
+      if (newv !== oldv) {
+        this.relayout({ autosize: this.autoResize });
+      }
+    },
     initEvents() {
       if (this.autoResize) {
         this.__resizeListener = debounce(this.newPlot, 200)
@@ -118,7 +129,9 @@ export default {
       return Plotly.plot(this.$refs.container, this.data, this.internalLayout, this.options)
     },
     newPlot() {
-      return Plotly.newPlot(this.$refs.container, this.data, this.internalLayout, this.options)
+      return Plotly.newPlot(this.$refs.container, this.data, this.internalLayout, this.options).catch((err) => {
+        console.log('[safe to ignore] failed during plotly\'s newPlot : (%s) %s', err.name, err.message);
+      })
     }
   }
 }

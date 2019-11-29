@@ -1,3 +1,7 @@
+# COMPATIBILIY branch
+
+Since IE break when upgrading plotly.js > 1.45.2 or vue-plotly > 0.2.0
+
 # vue-plotly [![Build Status](https://travis-ci.org/statnett/vue-plotly.svg?branch=master)](https://travis-ci.org/statnett/vue-plotly) [![Coverage Status](https://coveralls.io/repos/github/statnett/vue-plotly/badge.svg?branch=master)](https://coveralls.io/github/statnett/vue-plotly?branch=master)
 
 ## Install
