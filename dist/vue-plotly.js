@@ -596,7 +596,7 @@ var Component = __webpack_require__(29)(
   /* cssModules */
   null
 )
-Component.options.__file = "C:\\Users\\martinha\\vue-plotly\\src\\Plotly.vue"
+Component.options.__file = "/home/drault/Developpement/builds/amfine-soft/forks/vue-plotly/src/Plotly.vue"
 if (Component.esModule && Object.keys(Component.esModule).some(function (key) {return key !== "default" && key !== "__esModule"})) {console.error("named exports are not supported in *.vue files.")}
 if (Component.options.functional) {console.error("[vue-loader] Plotly.vue: functional components are not supported with templates, they should use render functions.")}
 
@@ -651,7 +651,7 @@ exports = module.exports = __webpack_require__(26)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -1082,7 +1082,9 @@ var methods = functions.reduce(function (all, funcName) {
       args[_key] = arguments[_key];
     }
 
-    return __WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a[funcName].apply(__WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a, [this.$refs.container].concat(args));
+    return __WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a[funcName].apply(__WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a, [this.$refs.container].concat(args)).catch(function (err) {
+      console.log('[safe to ignore] failed during plotly\'s %s : (%s) %s', funcName, err.name, err.message);
+    });
   };
   return all;
 }, {});
@@ -1091,6 +1093,9 @@ var methods = functions.reduce(function (all, funcName) {
   props: {
     autoResize: Boolean,
     watchShallow: false,
+    refresh: {
+      required: false
+    },
     options: {
       type: Object
     },
@@ -1113,12 +1118,10 @@ var methods = functions.reduce(function (all, funcName) {
 
     this.react();
     this.initEvents();
-
     this.$watch('data', function () {
       _this.internalLayout.datarevision++;
       _this.react();
     }, { deep: !this.watchShallow });
-
     this.$watch('options', this.react, { deep: !this.watchShallow });
     this.$watch('layout', this.relayout, { deep: !this.watchShallow });
   },
@@ -1138,6 +1141,8 @@ var methods = functions.reduce(function (all, funcName) {
 
       if (this.autoResize) {
         this.__resizeListener = function () {
+          _this3.resetSize();
+          _this3.relayout({ autosize: true });
           _this3.internalLayout.datarevision++;
           __WEBPACK_IMPORTED_MODULE_2_lodash_debounce___default()(_this3.react, 200);
         };
@@ -1145,6 +1150,7 @@ var methods = functions.reduce(function (all, funcName) {
       }
 
       this.__generalListeners = events.map(function (eventName) {
+        var forceResize = ['autosize', 'restyle', 'relayout', 'redraw'].indexOf(eventName) !== -1;
         return {
           fullName: 'plotly_' + eventName,
           handler: function handler() {
@@ -1152,6 +1158,9 @@ var methods = functions.reduce(function (all, funcName) {
               args[_key2] = arguments[_key2];
             }
 
+            if (forceResize) {
+              _this3.resetSize();
+            }
             _this3.$emit.apply(_this3, [eventName].concat(args));
           }
         };
@@ -1162,6 +1171,13 @@ var methods = functions.reduce(function (all, funcName) {
       });
     }
   }, methods, {
+    resetSize: function resetSize() {
+      if (this.options && this.options.toImageButtonOptions) {
+        this.options.toImageButtonOptions.width = null;
+        this.options.toImageButtonOptions.height = null;
+      }
+      this.getOptions();
+    },
     toImage: function toImage(options) {
       var el = this.$refs.container;
       var opts = __WEBPACK_IMPORTED_MODULE_3_lodash_defaults___default()(options, {
@@ -1201,9 +1217,19 @@ var methods = functions.reduce(function (all, funcName) {
       return __WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a.newPlot(this.$refs.container, this.data, this.internalLayout, this.getOptions());
     },
     react: function react() {
-      return __WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a.react(this.$refs.container, this.data, this.internalLayout, this.getOptions());
+      return __WEBPACK_IMPORTED_MODULE_1_plotly_js___default.a.react(this.$refs.container, this.data, this.internalLayout, this.getOptions()).catch(function (err) {
+        console.log('[safe to ignore] failed during plotly\'s react : (%s) %s', err.name, err.message);
+      });
     }
-  })
+  }),
+  watch: {
+    refresh: function refresh(newv, oldv) {
+      if (newv !== oldv) {
+        this.resetSize();
+        this.relayout({ autosize: true });
+      }
+    }
+  }
 });
 
 /***/ }),

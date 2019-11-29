@@ -2,7 +2,7 @@
 <div ref="container" class="vue-plotly"/>
 </template>
 <script>
-import Plotly from 'plotly.js/dist/plotly'
+import Plotly from 'plotly.js'
 import debounce from 'lodash/debounce'
 import defaults from 'lodash/defaults'
 
@@ -36,7 +36,9 @@ const functions = [
 
 const methods = functions.reduce((all, funcName) => {
   all[funcName] = function(...args) {
-    return Plotly[funcName].apply(Plotly, [this.$refs.container].concat(args))
+    return Plotly[funcName].apply(Plotly, [this.$refs.container].concat(args)).catch((err) => {
+      console.log('[safe to ignore] failed during plotly\'s %s : (%s) %s', funcName, err.name, err.message);
+    })
   }
   return all
 }, {})
@@ -45,6 +47,9 @@ export default {
   props: {
     autoResize: Boolean,
     watchShallow: false,
+    refresh: {
+      required: false
+    },
     options: {
       type: Object
     },
@@ -66,12 +71,10 @@ export default {
   mounted() {
     this.react()
     this.initEvents()
-
     this.$watch('data', () => {
       this.internalLayout.datarevision++
       this.react()
     }, { deep: !this.watchShallow })
-
     this.$watch('options', this.react, { deep: !this.watchShallow })
     this.$watch('layout', this.relayout, { deep: !this.watchShallow })
   },
@@ -84,6 +87,8 @@ export default {
     initEvents() {
       if (this.autoResize) {
         this.__resizeListener = () => {
+          this.resetSize();
+          this.relayout({ autosize: true });
           this.internalLayout.datarevision++
           debounce(this.react, 200)
         }
@@ -91,9 +96,13 @@ export default {
       }
 
       this.__generalListeners = events.map((eventName) => {
+        const forceResize = ['autosize', 'restyle', 'relayout', 'redraw'].indexOf(eventName) !== -1;
         return {
           fullName: 'plotly_' + eventName,
           handler: (...args) => {
+            if (forceResize) {
+              this.resetSize();
+            }
             this.$emit.apply(this, [eventName].concat(args))
           }
         }
@@ -104,6 +113,13 @@ export default {
       })
     },
     ...methods,
+    resetSize() {
+      if (this.options && this.options.toImageButtonOptions) {
+        this.options.toImageButtonOptions.width = null;
+        this.options.toImageButtonOptions.height = null;
+      }
+      this.getOptions();
+    },
     toImage(options) {
       let el = this.$refs.container
       let opts = defaults(options, {
@@ -143,7 +159,17 @@ export default {
       return Plotly.newPlot(this.$refs.container, this.data, this.internalLayout, this.getOptions())
     },
     react() {
-      return Plotly.react(this.$refs.container, this.data, this.internalLayout, this.getOptions())
+      return Plotly.react(this.$refs.container, this.data, this.internalLayout, this.getOptions()).catch((err) => {
+        console.log('[safe to ignore] failed during plotly\'s react : (%s) %s', err.name, err.message);
+      })
+    }
+  },
+  watch: {
+    refresh(newv, oldv) {
+      if (newv !== oldv) {
+        this.resetSize();
+        this.relayout({ autosize: true });
+      }
     }
   }
 }
